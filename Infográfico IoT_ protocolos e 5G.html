@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bushidō da IoT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Yuji+Syuku&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4ECDD; --panel:#FBF6EC; --ink:#1B1713; --muted:#6B5E50; --line:#D9CBB3; --grid:#EADFCB;
+  --ble:#2B4C8C; --zig:#A8730F; --lora:#3E7A4A; --nb:#B8323A; --ltem:#6A3D8F;
+  --g4:#8C8377; --g5:#C8102E; --gold:#B8892B; --petal:#F2A7B8;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#121010; --panel:#1C1816; --ink:#F1E8D8; --muted:#A89C8A; --line:#3A302A; --grid:#2A2320;
+    --ble:#7FA3E8; --zig:#E6B54A; --lora:#7CC48A; --nb:#F0707A; --ltem:#B892E0;
+    --g4:#8F8679; --g5:#FF4D5E; --gold:#E2B85A; --petal:#E58FA5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#121010; --panel:#1C1816; --ink:#F1E8D8; --muted:#A89C8A; --line:#3A302A; --grid:#2A2320;
+  --ble:#7FA3E8; --zig:#E6B54A; --lora:#7CC48A; --nb:#F0707A; --ltem:#B892E0;
+  --g4:#8F8679; --g5:#FF4D5E; --gold:#E2B85A; --petal:#E58FA5;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:1.0625rem;line-height:1.55;
+}
+h1,h2,h3{font-family:"Shippori Mincho B1","Atkinson Hyperlegible",system-ui,sans-serif;line-height:1.08;margin:0}
+h1{font-size:clamp(2.4rem,7vw,4.6rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(1.7rem,4vw,2.6rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.2rem;font-weight:700}
+p{margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding:0 1.25rem}
+section{padding:4.5rem 0;border-top:1px solid var(--line)}
+.lede{color:var(--muted);max-width:62ch;margin-top:.9rem;font-size:1.12rem}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--g5);outline-offset:3px;border-radius:4px}
+
+/* ---------- Hero / radar ---------- */
+.hero{padding:3.5rem 0 4rem;border-top:0}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:2.5rem;align-items:center;margin-top:2.25rem}
+@media (max-width:860px){.hero-grid{grid-template-columns:1fr}}
+.radar svg{width:100%;height:auto;display:block;overflow:visible}
+.radar .ring{fill:none;stroke:var(--line);stroke-width:1}
+.radar .ring-label{fill:var(--muted);font-size:11px;font-family:"Atkinson Hyperlegible",sans-serif}
+.radar .wedge{cursor:pointer;transition:opacity .2s, transform .2s;transform-origin:250px 250px}
+.radar .wedge:hover,.radar .wedge:focus-visible{opacity:1}
+.radar .wedge.dim{opacity:.28}
+.radar .wedge-name{font-family:"Shippori Mincho B1",sans-serif;font-weight:700;font-size:14px;pointer-events:none}
+.radar .hint{fill:var(--muted);font-size:12px}
+.detail{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.6rem;border-top:6px solid var(--c,var(--ink))}
+.detail h3{font-size:1.8rem}
+.detail .sub{color:var(--muted);font-style:italic;margin-top:.15rem}
+.spec{display:grid;grid-template-columns:auto 1fr;gap:.55rem 1.1rem;margin:1.2rem 0 0}
+.spec dt{color:var(--muted);font-size:.92rem}
+.spec dd{margin:0;font-weight:700}
+.meter{display:inline-flex;gap:3px;vertical-align:middle;margin-left:.35rem}
+.meter i{width:14px;height:8px;border-radius:2px;background:var(--grid)}
+.meter i.on{background:var(--c)}
+.uses{margin-top:1.2rem;padding-top:1rem;border-top:1px dashed var(--line);color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.2rem}
+.chip{border:1.5px solid var(--c);background:transparent;border-radius:999px;padding:.35rem .85rem;font-weight:700;font-size:.92rem}
+.chip[aria-pressed="true"]{background:var(--c);color:var(--paper)}
+
+/* ---------- Comparison bars ---------- */
+.tabs{display:flex;flex-wrap:wrap;gap:.4rem;margin:2rem 0 1.4rem;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;padding:.7rem .9rem;border-bottom:3px solid transparent;margin-bottom:-1px;color:var(--muted);font-weight:700}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.bars{display:grid;gap:.9rem}
+.bar-row{display:grid;grid-template-columns:120px 1fr;gap:1rem;align-items:center}
+@media (max-width:560px){.bar-row{grid-template-columns:1fr;gap:.3rem}}
+.bar-name{font-weight:700}
+.track{position:relative;height:30px;background:var(--grid);border-radius:6px}
+.fill{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--c);transition:left .5s ease,width .5s ease}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+.fill span{position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);white-space:nowrap;font-size:.9rem;color:var(--ink)}
+.fill.flip span{left:auto;right:8px;color:var(--paper);font-weight:700}
+.axis{display:flex;justify-content:space-between;color:var(--muted);font-size:.82rem;margin:.4rem 0 0 136px}
+@media (max-width:560px){.axis{margin-left:0}}
+.note{color:var(--muted);font-size:.92rem;margin-top:1rem}
+
+/* ---------- Chooser ---------- */
+.chooser{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:2rem;margin-top:2rem;align-items:start}
+@media (max-width:860px){.chooser{grid-template-columns:1fr}}
+.q{margin-bottom:1.5rem}
+.q legend{font-weight:700;margin-bottom:.6rem;padding:0}
+.q fieldset{border:0;margin:0;padding:0}
+.opts{display:flex;flex-wrap:wrap;gap:.5rem}
+.opt{border:1.5px solid var(--line);background:var(--panel);border-radius:10px;padding:.55rem .9rem;text-align:left}
+.opt[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.verdict{position:sticky;top:calc(env(safe-area-inset-top,0px) + 1rem);background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.5rem;border-left:8px solid var(--c,var(--line))}
+.verdict .big{font-family:"Shippori Mincho B1",sans-serif;font-weight:800;font-size:2.2rem;line-height:1;margin:.4rem 0 .7rem;color:var(--c,var(--muted))}
+.verdict .muted{color:var(--muted)}
+.scoreline{display:grid;gap:.35rem;margin-top:1rem}
+.scoreline div{display:grid;grid-template-columns:70px 1fr;gap:.5rem;align-items:center;font-size:.85rem;color:var(--muted)}
+.scoreline b{display:block;height:8px;border-radius:4px;background:var(--c);transition:width .3s}
+
+/* ---------- 5G pillars ---------- */
+.pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin-top:2rem}
+@media (max-width:760px){.pillars{grid-template-columns:1fr}}
+.pillar{text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:16px;padding:1.3rem;display:flex;flex-direction:column;gap:.5rem}
+.pillar .acr{font-family:"Shippori Mincho B1",sans-serif;font-weight:800;font-size:2.4rem;color:var(--g5);line-height:1}
+.pillar .full{color:var(--muted);font-size:.92rem}
+.pillar .more{display:none}
+.pillar[aria-expanded="true"]{border-color:var(--g5)}
+.pillar[aria-expanded="true"] .more{display:block}
+.pillar .tap{font-size:.85rem;color:var(--muted);margin-top:auto}
+
+/* ---------- 4G vs 5G ---------- */
+.versus{margin-top:2rem;display:grid;gap:2rem}
+.race{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.4rem}
+.lane{display:grid;grid-template-columns:52px 1fr 90px;gap:.8rem;align-items:center;margin-top:.9rem}
+.lane .lab{font-family:"Shippori Mincho B1",sans-serif;font-weight:800;font-size:1.3rem}
+.road{position:relative;height:14px;background:var(--grid);border-radius:7px}
+.packet{position:absolute;left:0;top:50%;width:22px;height:22px;margin-top:-11px;border-radius:50%;background:var(--c)}
+.lane .ms{font-size:.9rem;color:var(--muted);text-align:right}
+.btn{background:var(--ink);color:var(--paper);border:0;border-radius:10px;padding:.65rem 1.1rem;font-weight:700}
+.race-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;align-items:center}
+.vs-table{width:100%;border-collapse:collapse;font-size:.98rem}
+.vs-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:18px}
+.vs-table th,.vs-table td{text-align:left;padding:.85rem 1rem;border-bottom:1px solid var(--line);vertical-align:top}
+.vs-table tr:last-child td{border-bottom:0}
+.vs-table th{font-family:"Shippori Mincho B1",sans-serif;font-size:1.05rem}
+.vs-table td:first-child{color:var(--muted)}
+.vs-table .five{color:var(--g5);font-weight:700}
+
+/* ---------- Benefits, apps, challenges ---------- */
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem;margin-top:2rem}
+@media (max-width:760px){.three{grid-template-columns:1fr}}
+.three h3{margin-bottom:.4rem}
+.three p{color:var(--muted)}
+.three .ico{font-size:1.8rem;margin-bottom:.5rem}
+.app-panel{display:grid;grid-template-columns:auto 1fr;gap:1.5rem;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.6rem}
+.app-panel .emoji{font-size:3.4rem;line-height:1}
+.app-panel ul{margin:.8rem 0 0;padding-left:1.1rem}
+.app-panel li{margin:.3rem 0}
+details{border-bottom:1px solid var(--line);padding:1rem 0}
+details:first-of-type{border-top:1px solid var(--line);margin-top:2rem}
+summary{cursor:pointer;font-family:"Shippori Mincho B1",sans-serif;font-weight:700;font-size:1.25rem;list-style:none;display:flex;justify-content:space-between;gap:1rem}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-size:1.5rem;line-height:1;color:var(--muted)}
+details[open] summary::after{content:"–"}
+details p{color:var(--muted);margin-top:.6rem;max-width:70ch}
+
+/* ---------- Closed loop ---------- */
+.loop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2rem;align-items:center;margin-top:2rem}
+@media (max-width:760px){.loop{grid-template-columns:1fr}}
+.loop svg{width:100%;max-width:420px;height:auto;display:block;margin:0 auto}
+.node circle{fill:var(--panel);stroke:var(--line);stroke-width:2;transition:fill .3s,stroke .3s}
+.node text{fill:var(--ink);font-size:13px;font-weight:700;text-anchor:middle;font-family:"Atkinson Hyperlegible",sans-serif}
+.node.on circle{fill:var(--g5);stroke:var(--g5)}
+.node.on text{fill:var(--paper)}
+.arc{fill:none;stroke:var(--line);stroke-width:2.5}
+.arc.on{stroke:var(--g5)}
+.step-text{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.5rem;min-height:190px}
+.step-text .n{color:var(--g5);font-weight:700}
+.step-text h3{margin:.3rem 0 .5rem}
+.step-text p{color:var(--muted)}
+.edge{margin-top:2.5rem;max-width:70ch}
+.edge p{color:var(--muted);margin-top:.5rem}
+footer{padding:2.5rem 0 3rem;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
+
+/* ========== Camada interativa extra ========== */
+html{scroll-padding-top:72px}
+.topbar{position:sticky;top:0;z-index:50;background:var(--paper);background:color-mix(in srgb,var(--paper) 86%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:.75rem;height:58px}
+.brand{font-family:"Shippori Mincho B1",sans-serif;font-weight:800;white-space:nowrap;display:flex;align-items:center;gap:.55rem}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--g5);animation:beat 2s infinite}
+@keyframes beat{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--g5) 60%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+.navlinks{display:flex;gap:.2rem;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.navlinks::-webkit-scrollbar{display:none}
+.navlinks a{color:var(--muted);text-decoration:none;padding:.35rem .75rem;border-radius:999px;font-size:.88rem;font-weight:700;white-space:nowrap;transition:background .2s,color .2s}
+.navlinks a:hover{color:var(--ink);background:var(--grid)}
+.navlinks a.active{background:var(--ink);color:var(--paper)}
+.themebtn{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-size:1.1rem;transition:transform .4s}
+.themebtn:hover{transform:rotate(25deg)}
+.progress{position:absolute;left:0;bottom:-1px;height:3px;width:100%;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,var(--ble),var(--zig),var(--lora),var(--nb),var(--ltem),var(--g5))}
+@media (max-width:640px){.brand .txt{display:none}}
+
+.eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-weight:700;color:var(--muted);font-size:.95rem;margin-bottom:1rem;padding:.3rem .8rem;border:1px solid var(--line);border-radius:999px;background:var(--panel)}
+.hl{background:linear-gradient(90deg,var(--ble),var(--lora),var(--g5),var(--ltem),var(--ble));background-size:300% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 8s linear infinite}
+@keyframes shine{to{background-position:300% center}}
+.team{display:flex;align-items:center;gap:.8rem;margin-top:1.4rem;flex-wrap:wrap}
+.avatars{display:flex}
+.avatar{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:var(--paper);font-family:"Shippori Mincho B1",sans-serif;font-weight:800;font-size:1.2rem;border:3px solid var(--paper);animation:bob 3s ease-in-out infinite;cursor:default}
+.avatar+.avatar{margin-left:-12px;animation-delay:-1.5s}
+.avatar::after{content:attr(data-name);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translate(-50%,4px);background:var(--ink);color:var(--paper);font-size:.8rem;padding:.2rem .55rem;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.avatar:hover::after{opacity:1;transform:translate(-50%,0)}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.team-name strong{color:var(--ink)}
+
+.radar .sweep{animation:spin 5s linear infinite;transform-origin:250px 250px;pointer-events:none}
+.radar .ping{animation:ping 2.6s ease-out infinite;transform-origin:250px 250px;pointer-events:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ping{from{transform:scale(.12);opacity:.8}to{transform:scale(1);opacity:0}}
+.radar .wedge{animation:grow .8s cubic-bezier(.2,.8,.2,1) backwards}
+.radar .wedge:hover{transform:scale(1.04)}
+@keyframes grow{from{transform:scale(0);opacity:0}}
+.pop{animation:pop .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.98)}}
+.tourbtn{background:none;border:0;color:var(--muted);font-weight:700;font-size:.9rem;margin-top:.9rem;padding:.3rem 0}
+.tourbtn:hover{color:var(--ink)}
+.chip{transition:transform .15s}
+.chip:hover{transform:translateY(-2px)}
+
+.bar-row{transition:transform .2s}
+.bar-row:hover{transform:translateX(4px)}
+.fill span{transition:opacity .4s .4s}
+.bars.pre .fill{width:0!important}
+.bars.pre .fill span{opacity:0}
+
+.opt{transition:transform .15s,border-color .15s}
+.opt:hover{transform:translateY(-2px);border-color:var(--ink)}
+.verdict{top:74px}
+.qprog{display:flex;gap:.35rem;margin-top:.9rem}
+.qprog i{flex:1;height:6px;border-radius:3px;background:var(--grid);transition:background .3s}
+.qprog i.on{background:var(--c,var(--ink))}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;padding:0;margin-top:1rem;font-size:.92rem}
+
+.tilt{transition:transform .25s ease,box-shadow .25s;will-change:transform}
+.tilt:hover{box-shadow:0 16px 32px -20px rgba(0,0,0,.45)}
+.three>div{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1.4rem}
+.three>div:hover .ico{animation:bob .8s ease-in-out}
+.three .ico{display:inline-block}
+
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+@media (max-width:640px){.stats{grid-template-columns:1fr}}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.2rem 1.4rem}
+.stat .num{font-family:"Shippori Mincho B1",sans-serif;font-weight:800;font-size:2.8rem;color:var(--g5);line-height:1;font-variant-numeric:tabular-nums}
+.stat p{color:var(--muted);margin-top:.4rem}
+.lane .ms{font-variant-numeric:tabular-nums}
+.race-result{margin-top:1rem;min-height:1.6em;font-weight:700;color:var(--g5)}
+.btn{transition:transform .15s,opacity .2s}
+.btn:hover:not(:disabled){transform:translateY(-2px)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+
+.dens-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;margin-top:1rem}
+.dens-ctrl input{flex:1;min-width:200px;accent-color:var(--g5)}
+.dens-ctrl output{font-family:"Shippori Mincho B1",sans-serif;font-weight:800;font-size:1.4rem;min-width:10ch;text-align:right;font-variant-numeric:tabular-nums}
+.dens-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+@media (max-width:640px){.dens-grid{grid-template-columns:1fr}}
+.dens-box{border:1.5px solid var(--line);border-radius:14px;padding:.8rem;background:var(--paper);transition:border-color .3s}
+.dens-box h4{margin:0 0 .4rem;font-family:"Shippori Mincho B1",sans-serif;font-size:1.1rem}
+.dens-box canvas{width:100%;height:160px;display:block}
+.dens-box .st{font-size:.92rem;margin-top:.5rem;color:var(--muted)}
+.dens-box .st b{color:var(--lora)}
+.dens-box.bad{border-color:var(--nb)}
+.dens-box.bad .st b{color:var(--nb)}
+
+.app-panel .emoji{animation:pop .5s}
+.app-panel li{animation:slidein .45s cubic-bezier(.2,.8,.2,1) backwards}
+@keyframes slidein{from{opacity:0;transform:translateX(-14px)}}
+
+.node{cursor:pointer}
+.node:hover circle{stroke:var(--g5)}
+.packet-dot{fill:var(--g5);stroke:var(--paper);stroke-width:3;pointer-events:none}
+.loop-ctrl{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem}
+
+.quiz{margin-top:2rem;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:1.6rem;max-width:760px}
+.quiz-top{display:flex;justify-content:space-between;color:var(--muted);font-weight:700;font-size:.92rem}
+.quiz-bar{height:6px;background:var(--grid);border-radius:3px;margin:.6rem 0 1.4rem;overflow:hidden}
+.quiz-bar i{display:block;height:100%;background:var(--g5);transition:width .5s}
+.quiz h3{font-size:1.35rem;margin-bottom:1rem}
+.answers{display:grid;gap:.6rem}
+.ans{text-align:left;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:.8rem 1rem;transition:transform .15s,border-color .15s}
+.ans:hover:not(:disabled){transform:translateX(4px);border-color:var(--ink)}
+.ans:disabled{cursor:default;color:var(--ink)}
+.ans.right{border-color:var(--lora);background:color-mix(in srgb,var(--lora) 16%,var(--paper))}
+.ans.wrong{border-color:var(--nb);background:color-mix(in srgb,var(--nb) 14%,var(--paper));animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.feedback{margin-top:1rem;min-height:1.5em;color:var(--muted)}
+.quiz-end{text-align:center}
+.quiz-end .big{font-family:"Shippori Mincho B1",sans-serif;font-size:3.8rem;font-weight:800;color:var(--g5);line-height:1}
+.quiz-end p{color:var(--muted);margin:.6rem 0 1.2rem}
+#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:100}
+.credits{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;align-items:center}
+.credits .team{margin:0;color:var(--ink)}
+
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.8,.2,1)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .radar .sweep,.radar .ping,.radar .wedge,.hl,.avatar,.brand .dot,.pop,.app-panel li,.app-panel .emoji{animation:none!important}
+  .reveal{opacity:1;transform:none;transition:none}
+}
+
+/* ========== Tema samurai ========== */
+.jp{font-family:"Yuji Syuku","Shippori Mincho B1",serif}
+.brand .kanji{font-family:"Yuji Syuku",serif;color:var(--g5);font-size:1.4rem;line-height:1}
+.hero{position:relative;overflow:clip;padding-bottom:0}
+.hero>.wrap{position:relative;z-index:1;padding-bottom:3rem}
+.hero::before{content:"";position:absolute;width:min(70vw,560px);aspect-ratio:1;border-radius:50%;background:var(--g5);opacity:.09;right:-6%;top:8%}
+header[data-kanji]::after,section[data-kanji]::after{content:attr(data-kanji);position:absolute;right:-.5rem;top:1rem;font-family:"Yuji Syuku",serif;font-size:clamp(8rem,22vw,17rem);line-height:1;color:var(--ink);opacity:.05;pointer-events:none;z-index:0}
+section{border-top:0;position:relative;overflow:clip}
+section>.wrap{position:relative;z-index:1}
+section::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--ink) 15%,var(--g5) 50%,var(--ink) 85%,transparent);transform:scaleX(0);transform-origin:left;transition:transform 1.1s cubic-bezier(.75,0,.15,1)}
+section.cut::before{transform:scaleX(1)}
+.sec-n{font-family:"Shippori Mincho B1",serif;color:var(--g5);font-weight:700;letter-spacing:.25em;font-size:.95rem;margin-bottom:.6rem}
+section h2::after{content:"";display:block;width:72px;height:6px;margin-top:.8rem;background:var(--g5);border-radius:1px 10px 2px 12px}
+.eyebrow .jp{color:var(--g5);font-size:1.1rem}
+.hl{background-image:linear-gradient(90deg,var(--g5),var(--gold),var(--nb),var(--g5))}
+
+.avatar{border-radius:7px;background:var(--g5);font-family:"Yuji Syuku",serif;box-shadow:inset 0 0 0 2px var(--g5),inset 0 0 0 4px var(--paper);rotate:-5deg}
+.avatar+.avatar{background:var(--ink);box-shadow:inset 0 0 0 2px var(--ink),inset 0 0 0 4px var(--paper);rotate:6deg}
+
+.detail,.verdict,.race,.vs-wrap,.app-panel,.step-text,.quiz,.stat,.pillar,.three>div,.dens-box{border-radius:6px;box-shadow:inset 0 0 0 4px var(--panel),inset 0 0 0 5px var(--line)}
+.dens-box{box-shadow:none}
+.tilt:hover{box-shadow:inset 0 0 0 4px var(--panel),inset 0 0 0 5px var(--line),0 16px 32px -20px rgba(0,0,0,.5)}
+.btn{border-radius:4px;letter-spacing:.02em}
+.btn:hover:not(:disabled),.btn.ghost:hover:not(:disabled){background:var(--g5);border-color:var(--g5);color:#fff}
+.opt{border-radius:5px}
+.opt[aria-pressed="true"]{background:var(--g5);border-color:var(--g5);color:#fff}
+.tab[aria-selected="true"]{border-bottom-color:var(--g5)}
+.navlinks a.active{background:var(--g5);color:#fff}
+.progress{height:3px;background:linear-gradient(90deg,var(--ink),var(--g5) 70%,var(--gold))}
+.pillar .acr,.stat .num,.quiz-end .big{color:var(--g5)}
+.pillar[aria-expanded="true"]{border-color:var(--g5)}
+
+.waves{line-height:0}
+.waves svg{display:block;width:100%;height:72px}
+
+.sakura{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.sakura.off{display:none}
+.sakura i{position:absolute;top:-24px;background:var(--petal);border-radius:100% 0 100% 0;opacity:.8;animation:fall linear infinite,sway ease-in-out infinite alternate}
+@keyframes fall{to{transform:translate3d(0,112vh,0) rotate(600deg)}}
+@keyframes sway{to{margin-left:70px}}
+.slash{position:fixed;left:-10%;width:120%;height:3px;background:linear-gradient(90deg,transparent,#fff,var(--g5),transparent);box-shadow:0 0 18px var(--g5);pointer-events:none;z-index:60;transform-origin:left;animation:slash .5s cubic-bezier(.7,0,.2,1) forwards}
+@keyframes slash{from{transform:rotate(-8deg) scaleX(0);opacity:1}70%{opacity:1}to{transform:rotate(-8deg) scaleX(1);opacity:0}}
+@media (prefers-reduced-motion:reduce){section::before{transition:none}}
+</style>
+</head>
+<body>
+
+<nav class="topbar" aria-label="Seções">
+  <div class="wrap">
+    <span class="brand"><span class="kanji" aria-hidden="true">侍</span><span class="txt">Bushidō da IoT · Emannoel &amp; John</span></span>
+    <div class="navlinks" id="navlinks">
+      <a href="#topo">Radar</a><a href="#comparar">Comparar</a><a href="#escolher">Escolher</a><a href="#5g">5G</a><a href="#4g5g">4G × 5G</a><a href="#beneficios">Benefícios</a><a href="#aplicacoes">Aplicações</a><a href="#desafios">Desafios</a><a href="#ia">IA</a><a href="#quiz">Quiz</a>
+    </div>
+    <button class="themebtn" id="petalBtn" aria-pressed="true" aria-label="Ligar ou desligar pétalas de sakura">🌸</button>
+    <button class="themebtn" id="themeBtn" aria-label="Alternar tema">🌙</button>
+  </div>
+  <div class="progress" id="progress"></div>
+</nav>
+
+<header class="hero" id="topo" data-kanji="侍">
+  <div class="wrap">
+    <p class="eyebrow"><span class="jp" lang="ja">通信の道</span> O caminho da comunicação · Atividade IoT</p>
+    <h1>Qual <span class="hl">protocolo</span> de comunicação usar na IoT?</h1>
+    <p class="lede">Cada tecnologia troca alcance, bateria e velocidade de um jeito diferente. Toque numa fatia do radar para ver até onde cada sinal chega e para que ele serve.</p>
+    <div class="team">
+      <span class="avatars"><span class="avatar" style="--c:var(--ble)" data-name="Emannoel">E</span><span class="avatar" style="--c:var(--lora)" data-name="John">J</span></span>
+      <span class="team-name">Samurais desta missão: <strong>Emannoel</strong> e <strong>John</strong></span>
+    </div>
+    <div class="hero-grid">
+      <div class="radar" id="radar" aria-label="Radar de alcance dos protocolos em escala logarítmica"></div>
+      <div>
+        <article class="detail" id="detail" aria-live="polite"></article>
+        <div class="chips" id="chips" role="group" aria-label="Escolher protocolo"></div>
+        <button class="tourbtn" id="tourBtn" aria-pressed="false">▶ Tour automático</button>
+      </div>
+    </div>
+  </div>
+  <div class="waves" aria-hidden="true"></div>
+</header>
+
+<section id="comparar">
+  <div class="wrap">
+    <h2>Lado a lado</h2>
+    <p class="lede">Escolha o critério e compare os cinco protocolos. Alcance e taxa de dados usam escala logarítmica, porque as diferenças vão de metros a quilômetros e de bits a megabits.</p>
+    <div class="tabs" role="tablist" id="metricTabs"></div>
+    <div class="bars pre" id="bars"></div>
+    <div class="axis" id="axis"></div>
+    <p class="note" id="metricNote"></p>
+  </div>
+</section>
+
+<section id="escolher">
+  <div class="wrap">
+    <h2>Monte seu projeto e descubra o protocolo</h2>
+    <p class="lede">Responda às perguntas sobre o seu dispositivo. A recomendação muda a cada resposta.</p>
+    <div class="chooser">
+      <div id="questions"></div>
+      <aside class="verdict" id="verdict" aria-live="polite"></aside>
+    </div>
+  </div>
+</section>
+
+<section id="5g">
+  <div class="wrap">
+    <h2>O que é o 5G</h2>
+    <p class="lede">A quinta geração de redes móveis vai além de internet rápida no celular. Ela se apoia em três pilares, cada um pensado para um tipo de uso. Toque em um pilar para ver mais.</p>
+    <div class="pillars" id="pillars"></div>
+  </div>
+</section>
+
+<section id="4g5g">
+  <div class="wrap">
+    <h2>4G contra 5G</h2>
+    <p class="lede">A maior diferença para a IoT está na latência, o tempo que um comando leva para ir e voltar. Veja a corrida em câmera lenta.</p>
+    <div class="versus">
+      <div class="stats">
+        <div class="stat"><span class="num" data-count="40" data-suffix="×">40×</span><p>menos tempo de resposta: de ~40 ms para menos de 1 ms</p></div>
+        <div class="stat"><span class="num" data-count="10" data-suffix="×">10×</span><p>mais aparelhos por km²: de 100 mil para 1 milhão</p></div>
+        <div class="stat"><span class="num" data-count="20" data-suffix="×">20×</span><p>mais velocidade de pico: de ~1 Gbps para até 20 Gbps</p></div>
+      </div>
+      <div class="race">
+        <div class="race-head">
+          <h3>Um comando enviado a um robô (50× mais lento que a realidade)</h3>
+          <button class="btn" id="raceBtn">Enviar comando</button>
+        </div>
+        <div class="lane" style="--c:var(--g4)"><span class="lab">4G</span><div class="road"><span class="packet" id="p4"></span></div><span class="ms" id="t4">~40 ms</span></div>
+        <div class="lane" style="--c:var(--g5)"><span class="lab" style="color:var(--g5)">5G</span><div class="road"><span class="packet" id="p5"></span></div><span class="ms" id="t5">&lt; 1 ms</span></div>
+        <p class="race-result" id="raceResult" aria-live="polite"></p>
+      </div>
+      <div class="race">
+        <h3>Simulador: quantos aparelhos cabem em 1 km²?</h3>
+        <p class="note" style="margin-top:.3rem">Arraste e veja quando a rede 4G satura. Cada ponto representa 5.000 aparelhos.</p>
+        <div class="dens-ctrl">
+          <input type="range" id="dens" min="0" max="1000000" step="10000" value="60000" aria-label="Aparelhos por km²">
+          <output id="densOut" for="dens">60.000</output>
+        </div>
+        <div class="dens-grid">
+          <div class="dens-box" id="box4"><h4>4G</h4><canvas></canvas><p class="st"></p></div>
+          <div class="dens-box" id="box5"><h4 style="color:var(--g5)">5G</h4><canvas></canvas><p class="st"></p></div>
+        </div>
+      </div>
+      <div class="vs-wrap">
+        <table class="vs-table">
+          <thead><tr><th>Critério</th><th>4G (LTE)</th><th class="five">5G (NR)</th></tr></thead>
+          <tbody>
+            <tr><td>Latência</td><td>30 a 50 milissegundos</td><td class="five">Abaixo de 1 ms em condições ideais</td></tr>
+            <tr><td>Velocidade de pico</td><td>Até ~1 Gbps</td><td class="five">Até ~10 a 20 Gbps</td></tr>
+            <tr><td>Densidade de conexão</td><td>~100.000 dispositivos/km²</td><td class="five">Até ~1.000.000 dispositivos/km²</td></tr>
+            <tr><td>Eficiência energética</td><td>Moderada</td><td class="five">Otimizada para sensores IoT de baixo consumo</td></tr>
+            <tr><td>Espectro</td><td>Faixas abaixo de 6 GHz</td><td class="five">Abaixo de 6 GHz e ondas milimétricas (mmWave)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="beneficios">
+  <div class="wrap">
+    <h2>Como o 5G beneficia a IoT</h2>
+    <p class="lede">Antes, redes locais como Wi‑Fi e Bluetooth tinham alcance curto, e o 4G gastava muita bateria ou não aguentava muitos aparelhos na mesma antena. O 5G ataca esses três gargalos.</p>
+    <div class="three">
+      <div><div class="ico" aria-hidden="true">🏙️</div><h3>Escalabilidade massiva</h3><p>Bairros inteiros ou grandes complexos industriais podem instalar milhares de sensores sem sobrecarregar a rede.</p></div>
+      <div><div class="ico" aria-hidden="true">⚡</div><h3>Tempo real</h3><p>A baixa latência permite enviar e receber comandos rapidamente, viabilizando controle remoto de maquinário pesado e robótica de precisão.</p></div>
+      <div><div class="ico" aria-hidden="true">🛡️</div><h3>Confiabilidade</h3><p>Em saúde ou segurança pública, perder pacotes pode ser grave. O 5G mantém mais estabilidade mesmo com tráfego intenso.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="aplicacoes">
+  <div class="wrap">
+    <h2>Onde o 5G já muda a IoT</h2>
+    <div class="tabs" role="tablist" id="appTabs"></div>
+    <div class="app-panel" id="appPanel" role="tabpanel" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="desafios">
+  <div class="wrap">
+    <h2>Os desafios</h2>
+    <p class="lede">O potencial é enorme, mas a expansão do 5G na IoT esbarra em três barreiras.</p>
+    <details open><summary>Infraestrutura e custo</summary><p>O 5G de altíssima velocidade, especialmente em ondas milimétricas, precisa de antenas menores e mais próximas umas das outras (small cells). Isso exige investimento pesado de operadoras e governos.</p></details>
+    <details><summary>Cobertura interna e obstáculos</summary><p>Frequências altas têm dificuldade para atravessar paredes grossas de concreto. Muitas vezes é preciso usar repetidores internos ou redes híbridas.</p></details>
+    <details><summary>Segurança cibernética</summary><p>Bilhões de dispositivos conectados a uma rede tão rápida ampliam a superfície de ataque. São necessárias medidas robustas, como arquitetura Zero Trust e criptografia de ponta a ponta.</p></details>
+  </div>
+</section>
+
+<section id="ia">
+  <div class="wrap">
+    <h2>5G, inteligência artificial e automação</h2>
+    <p class="lede">Juntos, 5G e IA formam parte da infraestrutura da Quarta Revolução Industrial. O exemplo mais claro é a automação de ciclo fechado, que roda sem intervenção humana. Avance pelo ciclo.</p>
+    <div class="loop">
+      <svg viewBox="0 0 400 400" id="loopSvg" role="img" aria-label="Ciclo: sensor, rede 5G, IA na borda, atuador"></svg>
+      <div>
+        <div class="step-text" id="stepText" aria-live="polite"></div>
+        <div class="loop-ctrl">
+          <button class="btn ghost" id="prevBtn">← Voltar</button>
+          <button class="btn" id="stepBtn">Próximo passo →</button>
+          <button class="btn ghost" id="playBtn">▶ Reproduzir ciclo</button>
+        </div>
+      </div>
+    </div>
+    <div class="edge">
+      <h3>Edge computing + 5G</h3>
+      <p>Em vez de mandar todos os dados brutos de milhares de sensores para uma nuvem distante, o 5G os leva rapidamente a servidores de borda locais equipados com IA. A análise acontece perto de onde os dados nascem, e a resposta volta mais rápido.</p>
+    </div>
+  </div>
+</section>
+
+<section id="quiz">
+  <div class="wrap">
+    <h2>Teste seus conhecimentos</h2>
+    <p class="lede">O teste final do guerreiro: seis perguntas sobre tudo o que apareceu aqui. Acerte 4 ou mais para ganhar uma chuva de sakura.</p>
+    <div class="quiz" id="quizBox" aria-live="polite"></div>
+  </div>
+</section>
+
+<div class="waves" aria-hidden="true"></div>
+<footer>
+  <div class="wrap credits">
+    <div class="team">
+      <span class="avatars"><span class="avatar" style="--c:var(--ble)" data-name="Emannoel">E</span><span class="avatar" style="--c:var(--lora)" data-name="John">J</span></span>
+      <span class="team-name">Forjado por <strong>Emannoel</strong> e <strong>John</strong></span>
+    </div>
+    <span>Atividade IoT · Parte 1: pesquisa e quadro comparativo de protocolos, e estudo sobre 5G.</span>
+  </div>
+</footer>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script>
+const P = [
+  {id:"ble", name:"Bluetooth / BLE", short:"BLE", sub:"Bluetooth Low Energy", c:"var(--ble)",
+   range:[10,100], rangeTxt:"Curto (~10 a 100 m)", energy:2, energyTxt:"Muito baixo",
+   rate:[1000,2000], rateTxt:"Média (até 2 Mbps no BLE 5)", topo:"Ponto a ponto, estrela, malha",
+   uses:"Wearables, rastreadores de proximidade (beacons), periféricos de saúde e automação residencial de curto alcance."},
+  {id:"zig", name:"Zigbee", short:"Zigbee", sub:"Rede em malha de baixo consumo", c:"var(--zig)",
+   range:[10,100], rangeTxt:"Curto a médio (~10 a 100 m por nó)", energy:2, energyTxt:"Muito baixo",
+   rate:[250,250], rateTxt:"Baixa (~250 kbps)", topo:"Malha (mesh) autocicatrizante",
+   uses:"Iluminação inteligente, fechaduras eletrônicas, sensores de presença e temperatura em casas e prédios."},
+  {id:"lora", name:"LoRaWAN", short:"LoRaWAN", sub:"Long Range Wide Area Network", c:"var(--lora)",
+   range:[2000,15000], rangeTxt:"Longo (até 15 km no campo, 2 a 5 km na cidade)", energy:1, energyTxt:"Extremamente baixo",
+   rate:[0.3,50], rateTxt:"Muito baixa (0,3 a 50 kbps)", topo:"Estrela de estrelas (star-of-stars)",
+   uses:"Agricultura de precisão, medidores inteligentes de água e gás, cidades inteligentes e rastreamento logístico de longo alcance."},
+  {id:"nb", name:"NB‑IoT", short:"NB‑IoT", sub:"Narrowband IoT", c:"var(--nb)",
+   range:[1000,10000], rangeTxt:"Longo (rede celular, ótima penetração interna)", energy:2, energyTxt:"Muito baixo",
+   rate:[26,127], rateTxt:"Muito baixa (~26 a 127 kbps)", topo:"Estrela celular",
+   uses:"Medidores de serviços públicos em subsolos, bueiros inteligentes e sensores industriais estáticos."},
+  {id:"ltem", name:"LTE‑M", short:"LTE‑M", sub:"Cat‑M1", c:"var(--ltem)",
+   range:[1000,10000], rangeTxt:"Longo (rede celular)", energy:3, energyTxt:"Baixo a médio",
+   rate:[1000,1000], rateTxt:"Média (~1 Mbps)", topo:"Estrela celular",
+   uses:"Rastreamento de frotas em tempo real, dispositivos de saúde móveis e wearables com GPS e voz."}
+];
+let current = 2;
+
+/* ---------- Radar ---------- */
+const NS="http://www.w3.org/2000/svg";
+const CX=250, CY=250, R0=26, R=225, DMAX=20000;
+const rad = d => R0 + (Math.log10(d)/Math.log10(DMAX))*(R-R0);
+function pt(r,a){return [CX+r*Math.cos(a), CY+r*Math.sin(a)]}
+function sector(r0,r1,a0,a1){
+  const [x0,y0]=pt(r1,a0),[x1,y1]=pt(r1,a1),[x2,y2]=pt(r0,a1),[x3,y3]=pt(r0,a0);
+  const large=(a1-a0)>Math.PI?1:0;
+  return `M${x0},${y0} A${r1},${r1} 0 ${large} 1 ${x1},${y1} L${x2},${y2} A${r0},${r0} 0 ${large} 0 ${x3},${y3}Z`;
+}
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+function buildRadar(){
+  const svg=el("svg",{viewBox:"0 0 500 500"});
+  el("circle",{cx:CX,cy:CY,r:R,fill:"var(--g5)",opacity:".07"},svg);
+  [[10,"10 m"],[100,"100 m"],[1000,"1 km"],[10000,"10 km"]].forEach(([d,l])=>{
+    el("circle",{class:"ring",cx:CX,cy:CY,r:rad(d)},svg);
+    const t=el("text",{class:"ring-label",x:CX+4,y:CY-rad(d)-4},svg);t.textContent=l;
+  });
+  const sw=el("g",{class:"sweep"},svg);
+  el("path",{d:sector(R0,R,-0.6,0),fill:"var(--g5)",opacity:".13"},sw);
+  el("line",{x1:CX,y1:CY,x2:CX+R,y2:CY,stroke:"var(--g5)","stroke-width":"2",opacity:".55"},sw);
+  el("circle",{class:"ping",cx:CX,cy:CY,r:R,fill:"none",stroke:"var(--g5)","stroke-width":"2"},svg);
+  const step=2*Math.PI/P.length, start=-Math.PI/2-step/2;
+  P.forEach((p,i)=>{
+    const a0=start+i*step+0.04, a1=start+(i+1)*step-0.04;
+    const g=el("g",{class:"wedge",tabindex:"0",role:"button","aria-label":`${p.name}: ${p.rangeTxt}`,"data-i":i,style:`animation-delay:${.2+i*.12}s`},svg);
+    el("path",{d:sector(R0+2,rad(p.range[1]),a0,a1),fill:p.c,opacity:".18"},g);
+    el("path",{d:sector(rad(p.range[0]),rad(p.range[1]),a0,a1),fill:p.c},g);
+    const am=(a0+a1)/2, [tx,ty]=pt(rad(p.range[1])+16,am);
+    const t=el("text",{class:"wedge-name",x:tx,y:ty,"text-anchor":Math.cos(am)>0.3?"start":Math.cos(am)<-0.3?"end":"middle","dominant-baseline":"middle",fill:p.c},g);
+    t.textContent=p.short;
+    g.addEventListener("click",()=>select(i));
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select(i)}});
+  });
+  el("circle",{cx:CX,cy:CY,r:R0-6,fill:"var(--ink)"},svg);
+  const s=el("text",{x:CX,y:CY+1,"text-anchor":"middle","dominant-baseline":"middle",fill:"var(--paper)","font-size":"16"},svg);s.textContent="📡";
+  const h=el("text",{class:"hint",x:CX,y:496,"text-anchor":"middle"},svg);h.textContent="Faixa sólida: alcance típico. Escala logarítmica.";
+  document.getElementById("radar").appendChild(svg);
+}
+function meter(n,max){let s='<span class="meter" aria-hidden="true">';for(let i=1;i<=max;i++)s+=`<i class="${i<=n?'on':''}"></i>`;return s+'</span>'}
+function select(i,auto){
+  if(!auto&&typeof stopTour==="function")stopTour();
+  current=i; const p=P[i];
+  document.querySelectorAll(".wedge").forEach((w,j)=>w.classList.toggle("dim",j!==i));
+  const d=document.getElementById("detail"); d.style.setProperty("--c",p.c);
+  d.classList.remove("pop"); void d.offsetWidth; d.classList.add("pop");
+  d.innerHTML=`<h3>${p.name}</h3><p class="sub">${p.sub}</p>
+   <dl class="spec">
+    <dt>Alcance</dt><dd>${p.rangeTxt}</dd>
+    <dt>Consumo</dt><dd>${p.energyTxt}${meter(p.energy,3)}</dd>
+    <dt>Taxa de dados</dt><dd>${p.rateTxt}</dd>
+    <dt>Topologia</dt><dd>${p.topo}</dd>
+   </dl>
+   <p class="uses"><strong>Usos típicos:</strong> ${p.uses}</p>`;
+  document.querySelectorAll(".chip").forEach((c,j)=>c.setAttribute("aria-pressed",j===i));
+}
+function buildChips(){
+  const box=document.getElementById("chips");
+  P.forEach((p,i)=>{const b=document.createElement("button");b.className="chip";b.style.setProperty("--c",p.c);b.textContent=p.short;b.onclick=()=>select(i);box.appendChild(b)});
+}
+
+/* ---------- Comparison ---------- */
+const METRICS=[
+  {id:"range",label:"Alcance",log:true,min:1,max:DMAX,get:p=>p.range,fmt:p=>p.rangeTxt,ticks:["1 m","10 m","100 m","1 km","10 km"],
+   note:"NB‑IoT e LTE‑M dependem da cobertura da operadora; o valor mostrado é uma célula típica."},
+  {id:"rate",label:"Taxa de dados",log:true,min:0.1,max:5000,get:p=>p.rate,fmt:p=>p.rateTxt,ticks:["0,1 kbps","1 kbps","10 kbps","100 kbps","1 Mbps"],
+   note:"Pouca banda não é defeito: sensores costumam mandar só alguns bytes por leitura."},
+  {id:"energy",label:"Consumo de energia",log:false,min:0,max:3,get:p=>[0,p.energy],fmt:p=>p.energyTxt,ticks:["","Extremamente baixo","Muito baixo","Baixo a médio"],
+   note:"Barra menor significa bateria que dura mais. O LoRaWAN pode manter um sensor ligado por anos."}
+];
+let metric=0;
+function pos(m,v){return m.log?(Math.log10(v)-Math.log10(m.min))/(Math.log10(m.max)-Math.log10(m.min))*100:(v-m.min)/(m.max-m.min)*100}
+function buildTabs(){
+  const box=document.getElementById("metricTabs");
+  METRICS.forEach((m,i)=>{const b=document.createElement("button");b.className="tab";b.role="tab";b.textContent=m.label;b.onclick=()=>{metric=i;renderBars()};box.appendChild(b)});
+  const bars=document.getElementById("bars");
+  P.forEach(p=>{bars.insertAdjacentHTML("beforeend",`<div class="bar-row" style="--c:${p.c}"><span class="bar-name">${p.short}</span><div class="track"><div class="fill"><span></span></div></div></div>`)});
+}
+function renderBars(){
+  const m=METRICS[metric];
+  document.querySelectorAll("#metricTabs .tab").forEach((t,i)=>t.setAttribute("aria-selected",i===metric));
+  document.querySelectorAll("#bars .bar-row").forEach((row,i)=>{
+    const p=P[i],[a,b]=m.get(p),f=row.querySelector(".fill");
+    let l=Math.max(0,pos(m,a)), r=pos(m,b); if(r-l<2){l=Math.max(0,r-2)}
+    f.style.left=l+"%"; f.style.width=(r-l)+"%";
+    f.querySelector("span").textContent=m.fmt(p);
+    f.classList.toggle("flip", r>55);
+  });
+  document.getElementById("axis").innerHTML=m.ticks.map(t=>`<span>${t}</span>`).join("");
+  document.getElementById("metricNote").textContent=m.note;
+}
+
+/* ---------- Chooser ---------- */
+const QS=[
+  {q:"Até onde o sinal precisa chegar?",o:[
+    ["Até 100 m (casa, sala, escritório)",{ble:2,zig:2}],
+    ["Quilômetros, com rede própria (fazenda, cidade)",{lora:3}],
+    ["Onde houver sinal de celular",{nb:2,ltem:2}]]},
+  {q:"O dispositivo fica parado ou se move?",o:[
+    ["Fica parado",{nb:1,lora:1,zig:1}],
+    ["Anda com uma pessoa ou veículo",{ltem:2,ble:1}]]},
+  {q:"Que tipo de dado ele envia?",o:[
+    ["Leituras pequenas, de vez em quando",{lora:2,nb:2,zig:1}],
+    ["Fluxo contínuo, GPS ou voz",{ltem:2,ble:2}]]},
+  {q:"Algum detalhe especial do local?",o:[
+    ["Fica no subsolo ou dentro de concreto",{nb:3}],
+    ["Muitos aparelhos conversando no mesmo prédio",{zig:3}],
+    ["Bateria precisa durar anos sem troca",{lora:2,nb:1}],
+    ["Nenhum desses",{}]]}
+];
+const answers=QS.map(()=>null);
+function buildQuestions(){
+  const box=document.getElementById("questions");
+  QS.forEach((q,qi)=>{
+    const div=document.createElement("div");div.className="q";
+    div.innerHTML=`<fieldset><legend>${q.q}</legend><div class="opts"></div></fieldset>`;
+    const opts=div.querySelector(".opts");
+    q.o.forEach(([txt],oi)=>{const b=document.createElement("button");b.className="opt";b.textContent=txt;b.setAttribute("aria-pressed","false");
+      b.onclick=()=>{answers[qi]=oi;opts.querySelectorAll(".opt").forEach((x,j)=>x.setAttribute("aria-pressed",j===oi));renderVerdict()};opts.appendChild(b)});
+    box.appendChild(div);
+  });
+}
+function renderVerdict(){
+  const v=document.getElementById("verdict");
+  const score=Object.fromEntries(P.map(p=>[p.id,0]));
+  let n=0;
+  answers.forEach((a,qi)=>{if(a===null)return;n++;const w=QS[qi].o[a][1];for(const k in w)score[k]+=w[k]});
+  const qp=`<div class="qprog" aria-label="${n} de ${QS.length} respondidas">${answers.map(a=>`<i class="${a!==null?'on':''}"></i>`).join("")}</div>`;
+  if(!n){lastBest=null;v.style.removeProperty("--c");v.innerHTML=`<h3>Recomendação</h3><p class="big">?</p><p class="muted">Escolha pelo menos uma resposta ao lado.</p>${qp}`;return}
+  const best=P.reduce((a,b)=>score[b.id]>score[a.id]?b:a);
+  const top=Math.max(1,...Object.values(score));
+  v.style.setProperty("--c",best.c);
+  const changed=best.id!==lastBest; lastBest=best.id;
+  v.innerHTML=`<h3>Recomendação</h3><p class="big ${changed?'pop':''}">${best.name}</p><p>${best.uses}</p>
+    <div class="scoreline">${P.map(p=>`<div style="--c:${p.c}"><span>${p.short}</span><b style="width:${score[p.id]/top*100}%"></b></div>`).join("")}</div>
+    ${qp}
+    ${n<QS.length?`<p class="muted" style="margin-top:1rem">Responda todas as perguntas para uma escolha mais precisa.</p>`:`<p class="muted" style="margin-top:1rem">✅ Projeto completo!</p>`}
+    <button class="linkbtn" id="resetQ">Recomeçar</button>`;
+  document.getElementById("resetQ").onclick=()=>{answers.fill(null);celebrated=false;document.querySelectorAll("#questions .opt").forEach(o=>o.setAttribute("aria-pressed","false"));renderVerdict()};
+  if(n===QS.length&&!celebrated){celebrated=true;confetti()}
+}
+let lastBest=null, celebrated=false;
+
+/* ---------- 5G pillars ---------- */
+const PIL=[
+  ["eMBB","Enhanced Mobile Broadband","Banda larga móvel aprimorada","Download e upload muito altos, na casa de vários gigabits por segundo."],
+  ["URLLC","Ultra‑Reliable Low‑Latency Communication","Comunicação ultraconfiável e de baixíssima latência","Respostas abaixo de 1 ms em condições específicas. Essencial para controle industrial e veículos autônomos."],
+  ["mMTC","Massive Machine‑Type Communications","Comunicação massiva entre máquinas","Até 1 milhão de dispositivos por km² ao mesmo tempo, com baixo consumo de energia. É o pilar mais ligado à IoT."]
+];
+function buildPillars(){
+  const box=document.getElementById("pillars");
+  PIL.forEach(([a,f,pt,more])=>{const b=document.createElement("button");b.className="pillar";b.setAttribute("aria-expanded","false");
+    b.innerHTML=`<span class="acr">${a}</span><span class="full">${f}</span><strong>${pt}</strong><span class="more">${more}</span><span class="tap">Toque para ${"ver mais"}</span>`;
+    b.onclick=()=>{const o=b.getAttribute("aria-expanded")==="true";b.setAttribute("aria-expanded",!o);b.querySelector(".tap").textContent=o?"Toque para ver mais":"Toque para recolher"};
+    box.appendChild(b)});
+}
+
+/* ---------- Race ---------- */
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const raceBtn=document.getElementById("raceBtn");
+raceBtn.onclick=()=>{
+  raceBtn.disabled=true;
+  const res=document.getElementById("raceResult"); res.textContent="";
+  const lanes=[["p4",40,"t4"],["p5",1,"t5"]], SLOW=50, total=40*SLOW, t0=performance.now();
+  lanes.forEach(([id,ms])=>{
+    const p=document.getElementById(id),dist=p.parentElement.clientWidth-22;
+    p.getAnimations().forEach(a=>a.cancel());
+    if(reduce){p.style.transform=`translateX(${dist}px)`;return}
+    p.animate([{transform:"translateX(0)"},{transform:`translateX(${dist}px)`}],{duration:Math.max(ms*SLOW,60),fill:"forwards",easing:"linear"});
+  });
+  (function tick(now){
+    const e=reduce?total:now-t0;
+    lanes.forEach(([,ms,tid])=>{const v=Math.min(e/SLOW,ms);document.getElementById(tid).textContent=v>=ms?(ms<2?"✓ < 1 ms":`✓ ${ms} ms`):v.toFixed(1)+" ms"});
+    if(e<total){requestAnimationFrame(tick);return}
+    res.textContent="⚔️ O 5G golpeou cerca de 40 vezes antes. Para um robô, é a diferença entre parar a tempo ou não.";
+    raceBtn.disabled=false; raceBtn.textContent="Enviar de novo";
+  })(t0);
+};
+
+/* ---------- Apps ---------- */
+const APPS=[
+  ["Cidades inteligentes","🚦",["Semáforos inteligentes com gestão integrada","Iluminação pública que se adapta ao movimento","Monitoramento ambiental em tempo real","Câmeras de segurança com reconhecimento facial","Coleta de lixo automatizada"]],
+  ["Indústria 4.0","🏭",["Redes 5G privadas no lugar de cabos físicos","Robôs móveis autônomos (AMRs)","Linhas de montagem flexíveis","Manutenção preditiva com sensores industriais"]],
+  ["Saúde conectada","🩺",["Cirurgias robóticas remotas de alta precisão","Monitoramento contínuo de pacientes críticos","Wearables que transmitem sinais vitais"]],
+  ["Veículos e logística","🚚",["Comunicação V2X: veículo conversa com veículo, semáforo e via","Ajuda a evitar acidentes","Otimização de rotas de entrega"]]
+];
+let app=0;
+function buildApps(){
+  const box=document.getElementById("appTabs");
+  APPS.forEach(([t],i)=>{const b=document.createElement("button");b.className="tab";b.role="tab";b.textContent=t;b.onclick=()=>{app=i;renderApp()};box.appendChild(b)});
+  renderApp();
+}
+function renderApp(){
+  document.querySelectorAll("#appTabs .tab").forEach((t,i)=>t.setAttribute("aria-selected",i===app));
+  const [t,e,items]=APPS[app];
+  document.getElementById("appPanel").innerHTML=`<span class="emoji" aria-hidden="true">${e}</span><div><h3>${t}</h3><ul>${items.map((x,k)=>`<li style="animation-delay:${k*.07}s">${x}</li>`).join("")}</ul></div>`;
+}
+
+/* ---------- Closed loop ---------- */
+const STEPS=[
+  ["Sensor","Os sensores IoT capturam o ambiente","Temperatura, vibração, fluxo de carros: tudo vira dado a cada instante."],
+  ["Rede 5G","O 5G transporta os dados","Com baixa latência e alta densidade, milhares de leituras chegam quase na hora."],
+  ["IA na borda","A IA analisa padrões em tempo real","Servidores de borda, perto do local, detectam anomalias e decidem o que fazer."],
+  ["Atuador","O comando volta aos atuadores","Robôs, válvulas ou semáforos ajustam o processo, e o ciclo recomeça sem intervenção humana."]
+];
+let step=0, loopTimer=null, pkt=null;
+const LC=200, LR=135, lang=i=>-Math.PI/2+i*Math.PI/2;
+const playBtn=document.getElementById("playBtn");
+function startLoop(){stopLoop();loopTimer=setInterval(()=>{step=(step+1)%STEPS.length;renderStep()},2600);playBtn.textContent="⏸ Pausar ciclo"}
+function stopLoop(){clearInterval(loopTimer);loopTimer=null;playBtn.textContent="▶ Reproduzir ciclo"}
+function buildLoop(){
+  const svg=document.getElementById("loopSvg"),C=LC,RR=LR,ang=lang;
+  const defs=el("defs",{},svg),mk=el("marker",{id:"arrow",viewBox:"0 0 10 10",refX:"6",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto-start-reverse"},defs);
+  el("path",{d:"M0,0 L10,5 L0,10z",fill:"var(--muted)"},mk);
+  STEPS.forEach((_,i)=>{
+    const a0=ang(i)+0.32,a1=ang(i+1)-0.32;
+    const [x0,y0]=[C+RR*Math.cos(a0),C+RR*Math.sin(a0)],[x1,y1]=[C+RR*Math.cos(a1),C+RR*Math.sin(a1)];
+    el("path",{class:"arc",id:"arc"+i,d:`M${x0},${y0} A${RR},${RR} 0 0 1 ${x1},${y1}`,"marker-end":"url(#arrow)"},svg);
+  });
+  pkt=el("circle",{class:"packet-dot",r:8,cx:-50,cy:-50},svg);
+  STEPS.forEach(([n],i)=>{
+    const g=el("g",{class:"node",id:"node"+i,tabindex:"0",role:"button","aria-label":`Passo ${i+1}: ${n}`},svg),x=C+RR*Math.cos(ang(i)),y=C+RR*Math.sin(ang(i));
+    el("circle",{cx:x,cy:y,r:46},g);
+    const t=el("text",{x,y,"dominant-baseline":"middle"},g);t.textContent=n;
+    const go=()=>{stopLoop();step=i;renderStep()};
+    g.addEventListener("click",go);
+    g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+  });
+  const ct=el("text",{x:C,y:C,"text-anchor":"middle","dominant-baseline":"middle",fill:"var(--muted)","font-size":"13"},svg);ct.textContent="ciclo fechado";
+  document.getElementById("stepBtn").onclick=()=>{stopLoop();step=(step+1)%STEPS.length;renderStep()};
+  document.getElementById("prevBtn").onclick=()=>{stopLoop();step=(step+STEPS.length-1)%STEPS.length;renderStep()};
+  playBtn.onclick=()=>loopTimer?stopLoop():startLoop();
+  renderStep();
+  if(!reduce)requestAnimationFrame(function fly(now){
+    const t=(now%1400)/1400,a=lang(step)+0.36+t*(Math.PI/2-0.72);
+    pkt.setAttribute("cx",LC+LR*Math.cos(a));pkt.setAttribute("cy",LC+LR*Math.sin(a));
+    pkt.style.opacity=Math.sin(t*Math.PI).toFixed(2);
+    requestAnimationFrame(fly);
+  });
+}
+function renderStep(){
+  STEPS.forEach((_,i)=>{document.getElementById("node"+i).classList.toggle("on",i===step);document.getElementById("arc"+i).classList.toggle("on",i===step)});
+  const [n,t,d]=STEPS[step];
+  document.getElementById("stepText").innerHTML=`<span class="n">Passo ${step+1} de 4 · ${n}</span><h3>${t}</h3><p>${d}</p>`;
+}
+
+/* ---------- Tour automático do radar ---------- */
+let tourTimer=null;
+const tourBtn=document.getElementById("tourBtn");
+function startTour(){stopTour();tourTimer=setInterval(()=>select((current+1)%P.length,true),3500);tourBtn.textContent="⏸ Pausar tour";tourBtn.setAttribute("aria-pressed","true")}
+function stopTour(){clearInterval(tourTimer);tourTimer=null;tourBtn.textContent="▶ Tour automático";tourBtn.setAttribute("aria-pressed","false")}
+tourBtn.onclick=()=>tourTimer?stopTour():startTour();
+
+/* ---------- Tema, navegação e progresso ---------- */
+const root=document.documentElement, themeBtn=document.getElementById("themeBtn");
+const cssv=n=>getComputedStyle(root).getPropertyValue(n).trim();
+function isDark(){return root.dataset.theme?root.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches}
+function paintThemeBtn(){themeBtn.textContent=isDark()?"☀️":"🌙";themeBtn.setAttribute("aria-label",isDark()?"Mudar para tema claro":"Mudar para tema escuro")}
+try{const s=localStorage.getItem("iot-theme");if(s)root.dataset.theme=s}catch(e){}
+themeBtn.onclick=()=>{root.dataset.theme=isDark()?"light":"dark";try{localStorage.setItem("iot-theme",root.dataset.theme)}catch(e){}paintThemeBtn();drawDensity()};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{paintThemeBtn();drawDensity()});
+paintThemeBtn();
+
+const progress=document.getElementById("progress");
+function onScroll(){const h=root,max=h.scrollHeight-h.clientHeight;progress.style.transform=`scaleX(${max>0?h.scrollTop/max:0})`}
+addEventListener("scroll",onScroll,{passive:true});onScroll();
+
+const navBox=document.getElementById("navlinks"), links=[...navBox.querySelectorAll("a")];
+const navObs=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;
+  links.forEach(a=>{const on=a.getAttribute("href")==="#"+e.target.id;a.classList.toggle("active",on);
+    if(on)navBox.scrollTo({left:a.offsetLeft-navBox.clientWidth/2+a.clientWidth/2,behavior:reduce?"auto":"smooth"})});
+}),{rootMargin:"-45% 0px -50% 0px"});
+document.querySelectorAll("header[id],section[id]").forEach(s=>navObs.observe(s));
+
+/* ---------- Animações ao rolar ---------- */
+if(!reduce){
+  const targets=document.querySelectorAll("section h2, section .lede, .chooser, .pillars, .versus > *, .three, .app-panel, details, .loop, .edge, .quiz");
+  targets.forEach(t=>t.classList.add("reveal"));
+  const ro=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");ro.unobserve(e.target)}}),{threshold:.1});
+  targets.forEach(t=>ro.observe(t));
+}
+const barsEl=document.getElementById("bars");
+new IntersectionObserver((es,o)=>{if(es[0].isIntersecting){setTimeout(()=>barsEl.classList.remove("pre"),150);o.disconnect()}},{threshold:.3}).observe(barsEl);
+
+document.querySelectorAll("[data-count]").forEach(n=>{
+  const to=+n.dataset.count,suf=n.dataset.suffix||"";
+  if(reduce)return;
+  n.textContent="0"+suf;
+  new IntersectionObserver((es,o)=>{if(!es[0].isIntersecting)return;o.disconnect();const t0=performance.now();
+    (function f(now){const k=Math.min(1,(now-t0)/1400),v=Math.round(to*(1-Math.pow(1-k,3)));n.textContent=v+suf;if(k<1)requestAnimationFrame(f)})(t0);
+  },{threshold:.6}).observe(n);
+});
+
+if(!reduce&&matchMedia("(hover:hover)").matches){
+  document.querySelectorAll(".pillar, .three > div, .stat").forEach(c=>{
+    c.classList.add("tilt");
+    c.addEventListener("pointermove",e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+      c.style.transform=`perspective(700px) rotateY(${x*8}deg) rotateX(${-y*8}deg) translateY(-3px)`});
+    c.addEventListener("pointerleave",()=>c.style.transform="");
+  });
+}
+
+/* ---------- Simulador de densidade ---------- */
+const dens=document.getElementById("dens"), densOut=document.getElementById("densOut");
+const fmtN=n=>n.toLocaleString("pt-BR");
+const PTS=[];{let s=11;const r=()=>(s=(s*16807)%2147483647)/2147483647;for(let i=0;i<200;i++)PTS.push([r(),r()])}
+function drawBox(id,cap,val,colVar){
+  const box=document.getElementById(id),cv=box.querySelector("canvas"),dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+  if(!w)return;
+  cv.width=w*dpr;cv.height=h*dpr;const c=cv.getContext("2d");c.scale(dpr,dpr);
+  const n=Math.round(val/5000),ok=Math.round(Math.min(val,cap)/5000),col=cssv(colVar),bad=cssv("--nb"),cx=w/2,cy=h/2;
+  for(let i=0;i<n;i++){const [x,y]=PTS[i],px=10+x*(w-20),py=10+y*(h-20);
+    if(i<ok){c.strokeStyle=col;c.globalAlpha=.18;c.lineWidth=1;c.beginPath();c.moveTo(cx,cy);c.lineTo(px,py);c.stroke();c.globalAlpha=1;
+      c.fillStyle=col;c.beginPath();c.arc(px,py,3.2,0,7);c.fill()}
+    else{c.strokeStyle=bad;c.lineWidth=1.5;c.beginPath();c.arc(px,py,3.2,0,7);c.stroke()}}
+  c.fillStyle=cssv("--ink");c.beginPath();c.arc(cx,cy,9,0,7);c.fill();
+  c.font="12px sans-serif";c.textAlign="center";c.textBaseline="middle";c.fillText("📡",cx,cy+1);
+  const off=Math.max(0,val-cap);
+  box.classList.toggle("bad",off>0);
+  box.querySelector(".st").innerHTML=off>0?`<b>Rede saturada:</b> ${fmtN(off)} aparelhos sem conexão`:`<b>Tudo conectado</b> · usando ${Math.round(val/cap*100)}% da capacidade`;
+}
+function drawDensity(){const v=+dens.value;densOut.textContent=fmtN(v);drawBox("box4",100000,v,"--g4");drawBox("box5",1000000,v,"--g5")}
+dens.addEventListener("input",drawDensity);addEventListener("resize",drawDensity);
+
+/* ---------- Quiz ---------- */
+const QUIZ=[
+  ["Um medidor de água no subsolo de um prédio precisa enviar leituras. Qual protocolo é o mais indicado?",["Bluetooth / BLE","NB‑IoT","Zigbee","LTE‑M"],1,"O NB‑IoT tem ótima penetração em ambientes internos e subterrâneos."],
+  ["Qual protocolo chega a até 15 km no campo com consumo extremamente baixo?",["LoRaWAN","Zigbee","LTE‑M","Bluetooth / BLE"],0,"O LoRaWAN troca velocidade por alcance enorme e bateria que dura anos."],
+  ["Qual pilar do 5G é o mais ligado à IoT massiva?",["eMBB","URLLC","mMTC"],2,"O mMTC suporta até 1 milhão de dispositivos por km²."],
+  ["Rastrear uma frota de caminhões com GPS em tempo real pede qual protocolo?",["Zigbee","LoRaWAN","LTE‑M","NB‑IoT"],2,"O LTE‑M suporta mobilidade, ~1 Mbps e até voz."],
+  ["Lâmpadas e fechaduras de uma casa formando uma rede em malha autocicatrizante usam…",["Zigbee","NB‑IoT","LTE‑M","LoRaWAN"],0,"Na malha do Zigbee, se um nó cai, o sinal encontra outro caminho."],
+  ["Qual a latência do 5G em condições ideais?",["30 a 50 ms","Cerca de 10 ms","Abaixo de 1 ms","Cerca de 1 segundo"],2,"Por isso o 5G viabiliza cirurgia remota e controle de robôs."]
+];
+let qi=0,qScore=0;
+const quizBox=document.getElementById("quizBox");
+function renderQuiz(){
+  if(qi>=QUIZ.length){
+    const pct=qScore/QUIZ.length;
+    quizBox.innerHTML=`<div class="quiz-end pop"><p class="big">${qScore}/${QUIZ.length}</p><h3>${pct===1?"Mestre samurai da IoT 🏯":pct>=.6?"Guerreiro de honra ⚔️":"Ainda um rōnin 📜"}</h3>
+      <p>${pct>=.6?"Sua lâmina é afiada: você já escolhe o protocolo certo para cada missão.":"Treine mais no radar e no comparador, depois volte ao duelo."}<br>Duelo criado por Emannoel e John.</p>
+      <button class="btn" id="quizAgain">Duelar de novo</button></div>`;
+    document.getElementById("quizAgain").onclick=()=>{qi=0;qScore=0;renderQuiz()};
+    if(pct>=.6)confetti();
+    return;
+  }
+  const [q,opts,ans,why]=QUIZ[qi];
+  quizBox.innerHTML=`<div class="quiz-top"><span>Pergunta ${qi+1} de ${QUIZ.length}</span><span id="qs">⭐ ${qScore}</span></div>
+    <div class="quiz-bar"><i style="width:${qi/QUIZ.length*100}%"></i></div>
+    <h3 class="pop">${q}</h3><div class="answers">${opts.map((o,i)=>`<button class="ans" data-i="${i}">${o}</button>`).join("")}</div>
+    <div class="feedback"></div>`;
+  quizBox.querySelectorAll(".ans").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.i,right=i===ans;if(right)qScore++;
+    quizBox.querySelectorAll(".ans").forEach((x,j)=>{x.disabled=true;if(j===ans)x.classList.add("right");else if(j===i)x.classList.add("wrong")});
+    document.getElementById("qs").textContent="⭐ "+qScore;
+    quizBox.querySelector(".quiz-bar i").style.width=(qi+1)/QUIZ.length*100+"%";
+    const fb=quizBox.querySelector(".feedback");
+    fb.innerHTML=`<p><strong>${right?"✅ Certo!":"❌ Quase."}</strong> ${why}</p><button class="btn" style="margin-top:.9rem">${qi+1<QUIZ.length?"Próxima →":"Ver resultado"}</button>`;
+    const nx=fb.querySelector(".btn");nx.onclick=()=>{qi++;renderQuiz()};nx.focus({preventScroll:true});
+  });
+}
+
+/* ---------- Confete ---------- */
+function confetti(){
+  if(reduce)return;
+  const cv=document.getElementById("confetti"),c=cv.getContext("2d");cv.width=innerWidth;cv.height=innerHeight;
+  const cols=["#F7C6D2","#F2A7B8","#E98AA2","#FFFFFF",cssv("--gold"),cssv("--g5")];
+  const ps=Array.from({length:170},()=>({x:innerWidth/2+(Math.random()-.5)*240,y:innerHeight*.4,vx:(Math.random()-.5)*16,vy:-Math.random()*15-5,r:Math.random()*7+5,a:Math.random()*6,va:(Math.random()-.5)*.35,c:cols[Math.random()*cols.length|0]}));
+  let t=0;
+  (function f(){c.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{p.vy+=.38;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.a+=p.va;c.save();c.translate(p.x,p.y);c.rotate(p.a);c.fillStyle=p.c;c.beginPath();c.ellipse(0,0,p.r/2,p.r/3.2,0,0,7);c.fill();c.restore()});
+    if(++t<200)requestAnimationFrame(f);else c.clearRect(0,0,cv.width,cv.height)})();
+}
+
+/* ---------- Tema samurai ---------- */
+const CHAP=["一","二","三","四","五","六","七","八","九","十"];
+const KANJI={comparar:"比",escolher:"選","5g":"五","4g5g":"速",beneficios:"益",aplicacoes:"用",desafios:"難",ia:"智",quiz:"試"};
+document.querySelectorAll("section[id]").forEach((s,i)=>{
+  if(KANJI[s.id])s.dataset.kanji=KANJI[s.id];
+  const h=s.querySelector("h2");
+  if(h)h.insertAdjacentHTML("beforebegin",`<p class="sec-n"><span lang="ja">第${CHAP[i]}章</span> · Capítulo ${i+1}</p>`);
+});
+if(reduce)document.querySelectorAll("section").forEach(s=>s.classList.add("cut"));
+else{const co=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("cut");co.unobserve(e.target)}}),{threshold:.08});
+  document.querySelectorAll("section").forEach(s=>co.observe(s))}
+
+function makeWaves(box){
+  const svg=el("svg",{viewBox:"0 0 1200 72",preserveAspectRatio:"xMidYMax slice"});
+  for(let r=0;r<5;r++){
+    const y=14+r*14,off=r%2?20:0;
+    for(let x=-20+off;x<=1240;x+=40){
+      el("circle",{cx:x,cy:y,r:20,style:"fill:var(--paper);stroke:var(--ble);stroke-width:1.4;stroke-opacity:.55"},svg);
+      [14,8].forEach(rr=>el("circle",{cx:x,cy:y,r:rr,style:"fill:none;stroke:var(--ble);stroke-width:1.4;stroke-opacity:.55"},svg));
+    }
+  }
+  box.appendChild(svg);
+}
+document.querySelectorAll(".waves").forEach(makeWaves);
+
+const petalBtn=document.getElementById("petalBtn");
+let sakura=null;
+if(!reduce){
+  sakura=document.createElement("div");sakura.className="sakura";sakura.setAttribute("aria-hidden","true");
+  for(let i=0;i<16;i++){const p=document.createElement("i"),s=8+Math.random()*9;
+    p.style.left=Math.random()*100+"vw";p.style.width=s+"px";p.style.height=s*.7+"px";
+    p.style.animationDuration=`${10+Math.random()*10}s, ${3+Math.random()*3}s`;
+    p.style.animationDelay=`${-Math.random()*20}s, 0s`;sakura.appendChild(p)}
+  document.body.appendChild(sakura);
+  try{if(localStorage.getItem("iot-petals")==="off"){sakura.classList.add("off");petalBtn.setAttribute("aria-pressed","false")}}catch(e){}
+  petalBtn.onclick=()=>{const off=sakura.classList.toggle("off");petalBtn.setAttribute("aria-pressed",String(!off));try{localStorage.setItem("iot-petals",off?"off":"on")}catch(e){}};
+}else petalBtn.hidden=true;
+
+function katana(y){
+  if(reduce)return;
+  const s=document.createElement("div");s.className="slash";s.style.top=(y??innerHeight/2)+"px";
+  document.body.appendChild(s);s.addEventListener("animationend",()=>s.remove());
+}
+document.addEventListener("click",e=>{const b=e.target.closest(".btn, .opt, .ans");if(b)katana(e.clientY)});
+
+buildRadar();buildChips();select(current,true);
+buildTabs();renderBars();
+buildQuestions();renderVerdict();
+buildPillars();buildApps();buildLoop();
+drawDensity();renderQuiz();
+if(!reduce)startTour();
+</script>
+</body>
+</html>
